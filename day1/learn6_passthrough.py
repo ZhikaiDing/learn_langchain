@@ -39,7 +39,7 @@ print("[message2]", ret, "\n"+"="*50)
 # 方案3
 def add_name_base2(d:dict):
     d["user_name"] = "def" # 改变原始 dict
-    return d
+    return "DEF" # 返回值不影响 RunnablePassthrough 
 add_name3 = RunnablePassthrough(add_name_base2)
 chain3 = add_name3 | prompt
 
@@ -56,6 +56,9 @@ all_info = RunnableParallel(
 )
 
 ret = all_info.invoke(params)
-print("[all info]", ret)
+print("[all info]", ret, "\n"+"="*50)
 
-#%% 
+#%% 透传任意参数
+chain4 = prompt | RunnablePassthrough() # 这里透传 message 列表
+ret = chain4.invoke(params)
+print("[message4]", ret, "\n"+"="*50)

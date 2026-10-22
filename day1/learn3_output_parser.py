@@ -1,13 +1,18 @@
-from langchain_core.output_parsers import XMLOutputParser
+from langchain_core.output_parsers import (
+    JsonOutputParser, PydanticOutputParser, XMLOutputParser,
+    MarkdownListOutputParser
+)
 from langchain_core.prompts import ChatPromptTemplate
 
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 import os
 import json
+from pydantic import BaseModel, Field
 
 DOTENV_PATH = "day1/.env"
-NEED_MODEL_RUN = True
+NEED_TRY_FORMAT = True
+NEED_MODEL_RUN = False
 INPUT = {
     "user_query": "你好",
     "format_instruct": ""
@@ -17,8 +22,27 @@ SYS_PROMPT = """回复时严格输出 xml 格式，无需额外文字。{format_
 load_dotenv(DOTENV_PATH)
 
 #%% output format
-parser = XMLOutputParser()
+parser = XMLOutputParser(tags=["foo", "bar", "baz"])
 INPUT["format_instruct"] = parser.get_format_instructions()
+
+if NEED_TRY_FORMAT:
+    class MyPydOut(BaseModel):
+        name: str = Field(description="角色名称")
+        background: str = Field(description="角色背景简述（不超过300字）")
+
+    parsers = {
+        "[json]": JsonOutputParser(),
+        "[pydantic]": PydanticOutputParser(pydantic_object=MyPydOut),
+        "[xml]": parser,
+        "[list](markdown)": MarkdownListOutputParser()
+    }
+
+    for key in parsers:
+        parser = parsers[key]
+        print("-"*40)
+        print(key, parser.get_format_instructions())
+
+    print("="*50)
 
 #%% messages
 msgs = [
