@@ -47,7 +47,7 @@ model = ChatOpenAI(
     api_key=os.getenv("KIMI_API_KEY"),
     base_url=os.getenv("KIMI_URL"),
     model=os.getenv("KIMI_MODEL"),
-    temperature=1 # 这个模型必须设置为1
+    temperature=1 # KIMI 模型必须设置为1
 )
 
 model = model.bind_tools(tools)

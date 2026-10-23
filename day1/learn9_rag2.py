@@ -17,7 +17,7 @@ model = ChatOpenAI(
     api_key=os.getenv("DS_API_KEY"),
     base_url=os.getenv("DS_URL"),
     model=os.getenv("DS_MODEL"),
-    temperature=1 # 这个模型必须设置为1
+    temperature=1 # KIMI 模型必须设置为1
 )
 
 #%% embedding

@@ -1,0 +1,5 @@
+LangChain 是大语言模型应用开发框架。
+LCEL 是 LangChain 表达式语言，用来组装可运行链路。
+RAG 检索增强生成，先检索外部文档再交给大模型回答。
+RecursiveCharacterTextSplitter 是递归文本切分器，按标点分层切割文本。
+FAISS 是Meta开源的向量相似度检索库，内存向量库。
