@@ -7,8 +7,10 @@ from langgraph.checkpoint.memory import MemorySaver
 
 # 主状态
 class OverallState(TypedDict):
-    queries: list[str]
-    results: Annotated[list, operator.add]
+    queries: list[str] = []
+    results: Annotated[list, operator.add] = []
+    count: Annotated[int, operator.add] = 0
+    count_pass: Annotated[int, operator.add] = 0
 
 # worker局部状态
 class WorkerState(TypedDict):
@@ -29,6 +31,7 @@ def planner(state: OverallState) -> Command[Literal["worker"]]:
     return Command(goto=sends)
 
 def worker(state: WorkerState):
+    print("[debug] call worker")
     review = interrupt(
         value={
             "task_id": state["task_id"],
@@ -37,20 +40,40 @@ def worker(state: WorkerState):
         },
         response_schema=TaskReview
     )
+    print("[debug] geted review")
 
+    ans = f"reject:{state['queries']}"
+    passed = False
     if review.approved:
         final_q = review.revised_query or state["queries"]
-        return {
-            "results": [f"ok:{final_q}, note={review.note}"]
-        }
-    else:
-        return {"results": [f"reject:{state['queries']}"]}
+        ans = f"ok:{final_q}, note={review.note}"
+        passed = True
+
+    return {
+        "results": [{
+            "ans": ans,
+            "pass": passed
+        }],
+        "count": 1
+    }
+
+def count_pass(state:OverallState):
+    resume = interrupt("count pass? [Y/N]")
+    if resume:
+        count = 0
+        for r in state["results"]:
+            if r["pass"]:
+                count += 1
+        return {"count_pass": count}
+    return
 
 builder = StateGraph(OverallState)
 builder.add_node("planner", planner)
 builder.add_node("worker", worker)
+builder.add_node("count_pass", count_pass)
 builder.add_edge(START, "planner")
-builder.add_edge("worker", END)
+builder.add_edge("worker", "count_pass")
+builder.add_edge("count_pass", END)
 
 checkpointer = MemorySaver()
 graph = builder.compile(checkpointer=checkpointer)
@@ -84,8 +107,14 @@ if __name__ == "__main__":
     print("[resume_payload]", resume_payload)
 
     # 3. 并行多个中断
-    state = graph.invoke(
+    tmp_state = graph.invoke(
         Command(resume=resume_payload),
         config=cfg
     )
+    print("[debug single interrupt]", tmp_state["__interrupt__"])
+
+    # 4. 收尾中断
+    NEED_COUNT_PASS = True
+    state = graph.invoke(Command(resume=NEED_COUNT_PASS), config=cfg)
+
     print("[final state]", state)
